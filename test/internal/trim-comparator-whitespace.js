@@ -3,6 +3,7 @@
 const { test } = require('tap')
 const trimComparatorWhitespace =
   require('../../internal/trim-comparator-whitespace')
+const rangeParse = require('../fixtures/range-parse')
 const {
   safeRe,
   t: tokens,
@@ -20,6 +21,32 @@ const versions = [
   '0.0.0-928490632884417731e7af463c92b034d6a78268fc993bcb88a57944',
   `1.2.3-${'9'.repeat(MAX_LENGTH - '1.2.3-a'.length)}a`,
 ]
+
+test('matches legacy comparator trimming for range fixtures', t => {
+  const inputs = new Set(rangeParse.map(([range]) => range.trim().replace(/\s+/g, ' ')))
+  for (const range of inputs) {
+    t.equal(trimComparatorWhitespace(range),
+      range.replace(safeRe[tokens.COMPARATORTRIM], comparatorTrimReplace),
+      JSON.stringify(range))
+  }
+  t.end()
+})
+
+test('removes operator whitespace without rewriting version prefixes', t => {
+  const cases = [
+    [' > 1', ' >1'],
+    ['>= vvv1', '>=vvv1'],
+    ['>= v = 1', '>=v = 1'],
+    ['v = 1', 'v = 1'],
+    ['= = 1', '== 1'],
+    ['> = 1', '>= 1'],
+    ['> invalid', '> invalid'],
+  ]
+  for (const [input, expected] of cases) {
+    t.equal(trimComparatorWhitespace(input), expected, JSON.stringify(input))
+  }
+  t.end()
+})
 
 test('matches comparator trim behavior', t => {
   const mismatches = []
